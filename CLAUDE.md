@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`v` is a Go CLI tool (`github.com/frob/v`) for managing vendored git repositories. It reads and writes a `vendors.toml` file in the current directory.
+`v` is a Go CLI tool (`github.com/frob/v`) for managing vendored git repositories. It resolves refs to exact commit hashes, downloads repository contents (no `.git` directory) into a local `vendor/` tree, and records everything in `vendors.toml`.
 
 ## Tech Stack
 
@@ -22,29 +22,34 @@
 |---|---|
 | `main.go` | Binary entry point — delegates immediately to `cmd` |
 | `cmd/root.go` | Root Cobra command and `Execute()` |
-| `cmd/add.go` | `add` command — writes entries to `vendors.toml` |
+| `cmd/add.go` | `add` command — resolves ref, downloads repo, writes `vendors.toml` |
 | `cmd/add_test.go` | Tests for the `add` command |
 | `dist/` | Compiled binary and release artifact output |
-| `vendor/` | Vendored dependencies (checked in) |
+| `vendor/` | Vendored Go dependencies (checked in) |
 | `.goreleaser.yml` | Cross-compilation and distribution config |
 | `install.sh` | Curl-pipe installer for direct installation |
 | `.claude/docs/` | Extended documentation for Claude |
 
 ## vendors.toml Format
 
-Entries are keyed by remote URL. `ref` is optional and may be a commit hash, tag, or branch.
+Entries are keyed by remote URL. `ref` is always populated — defaults to the remote's default branch when not specified. `commit` is the exact resolved hash. `path` is where the repo was downloaded.
 
 ```toml
 ['https://github.com/example/repo']
-url = 'https://github.com/example/repo'
-ref = 'v1.0.0'
+url    = 'https://github.com/example/repo'
+ref    = 'main'
+commit = 'abc123...'
+path   = 'vendor/github.com/example/repo'
 ```
 
 ## Commands
 
 | Command | Description |
 |---|---|
-| `v add <url> [ref]` | Add or update a repository in `vendors.toml` |
+| `v add <url> [ref]` | Resolve ref, download repo (no `.git`), write `vendors.toml` |
+| `v add <url> [ref] -d <dir>` | Download to a custom directory instead of `vendor/<host>/<path>` |
+
+`ref` may be a branch, tag, or commit hash. When omitted, the remote's default branch is resolved automatically.
 
 ## Build & Test Tasks
 
@@ -57,7 +62,7 @@ All commands run through the Taskfile. If no task exists for an operation, add o
 | `task test` | `go test ./...` |
 | `task clean` | Remove `dist/` |
 | `task get -- <mod@version>` | Add a dependency |
-| `task tidy` | `go mod tidy` (strips unused deps) |
+| `task tidy` | `go mod tidy` (strips unused deps — run after `get`, before `vendor`) |
 | `task vendor` | `go mod vendor` |
 | `task docker:build` | Build Docker image tagged `v` |
 
