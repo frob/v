@@ -26,6 +26,11 @@ tasks:
     cmds:
       - docker build -t v .
 
+  get:
+    desc: "Add a dependency (usage: task get -- <module@version>)"
+    cmds:
+      - go get {{.CLI_ARGS}}
+
   tidy:
     desc: Tidy go modules
     cmds:
