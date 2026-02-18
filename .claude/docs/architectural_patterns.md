@@ -23,3 +23,7 @@ Dependencies are checked into `vendor/` (`go mod vendor`). Builds do not require
 ## Multi-Stage Docker Build / Static Binary
 
 `Dockerfile:1-15` uses a two-stage build: `golang:1.23-alpine` as builder, `scratch` as the final image. `CGO_ENABLED=0` produces a fully static binary. Keep CGO disabled; avoid dependencies that require cgo.
+
+## GoReleaser as Release Pipeline
+
+`.goreleaser.yml` is the single source of truth for all distribution. It cross-compiles for `linux/amd64`, `linux/arm64`, `darwin/amd64`, `darwin/arm64` — all with `CGO_ENABLED=0`. nfpm produces `.deb`, `.rpm`, and `.pkg.tar.zst` (Arch) packages from the same build. The Homebrew formula is pushed to `frob/homebrew-v` automatically. Use `task release:snapshot` for a local dry-run before publishing. The `install.sh` script (`install.sh:1`) is the curl-pipe entry point that auto-detects the package manager and falls back to binary extraction.

@@ -35,3 +35,18 @@ tasks:
     desc: Vendor dependencies
     cmds:
       - go mod vendor
+
+  release:check:
+    desc: Validate goreleaser config
+    cmds:
+      - goreleaser check
+
+  release:snapshot:
+    desc: Build all platform binaries locally without publishing
+    cmds:
+      - goreleaser release --snapshot --clean
+
+  release:
+    desc: Cut a release and publish (requires GITHUB_TOKEN)
+    cmds:
+      - goreleaser release --clean

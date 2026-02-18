@@ -11,6 +11,7 @@
 | Language | Go 1.23 |
 | CLI framework | Cobra v1.8.1 (`vendor/github.com/spf13/cobra`) |
 | Task runner | Taskfile v3 (`Taskfile.yml`) |
+| Release pipeline | GoReleaser v2 (`.goreleaser.yml`) |
 | Container | Docker (multi-stage, scratch final image) |
 
 ## Key Directories
@@ -19,7 +20,7 @@
 |---|---|
 | `main.go` | Binary entry point — delegates immediately to `cmd` |
 | `cmd/` | All CLI commands; one file per subcommand |
-| `dist/` | Compiled binary output (git-ignored) |
+| `dist/` | Compiled binary and release artifact output (git-ignored) |
 | `vendor/` | Vendored dependencies (checked in) |
 | `.claude/docs/` | Extended documentation for Claude |
 
@@ -29,7 +30,7 @@ All commands run through the Taskfile. If no task exists for an operation, add o
 
 | Task | Action |
 |---|---|
-| `task build` | Compile binary to `dist/v` |
+| `task build` | Compile binary to `dist/v` (current platform) |
 | `task run` | `go run . [args]` — pass args with `-- <args>` |
 | `task test` | `go test ./...` |
 | `task clean` | Remove `dist/` |
@@ -37,8 +38,26 @@ All commands run through the Taskfile. If no task exists for an operation, add o
 | `task vendor` | `go mod vendor` |
 | `task docker:build` | Build Docker image tagged `v` |
 
+## Release & Distribution Commands
+
+| Task | Action |
+|---|---|
+| `task release:check` | Validate `.goreleaser.yml` config |
+| `task release:snapshot` | Build all platforms locally into `dist/` — no publish |
+| `task release` | Cut a release and publish (requires `GITHUB_TOKEN`) |
+
+## Distribution
+
+| Channel | Artifact | Notes |
+|---|---|---|
+| Homebrew | Formula in `frob/homebrew-v` | Pushed automatically on release |
+| Debian/Ubuntu | `.deb` | Built by goreleaser/nfpm |
+| Fedora/RHEL | `.rpm` | Built by goreleaser/nfpm |
+| Arch Linux | `.pkg.tar.zst` | Built by goreleaser/nfpm |
+| Any | `install.sh` | Detects OS/arch/package manager |
+
 ## Additional Documentation
 
 Check these files when relevant:
 
-- `.claude/docs/architectural_patterns.md` — command structure, error handling, Docker build, vendoring, and Taskfile conventions
+- `.claude/docs/architectural_patterns.md` — command structure, error handling, Docker build, vendoring, Taskfile conventions, and release pipeline
