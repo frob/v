@@ -10,9 +10,9 @@ import (
 )
 
 var updateCmd = &cobra.Command{
-	Use:   "update [url]",
+	Use:   "update [url [ref]]",
 	Short: "Update vendored repositories to the latest commit for their ref",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.MaximumNArgs(2),
 	RunE:  runUpdate,
 }
 
@@ -34,12 +34,16 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("parsing %s: %w", vendorsFile, err)
 	}
 
+	var newRef string
 	urls := make([]string, 0, len(cfg))
-	if len(args) == 1 {
+	if len(args) >= 1 {
 		if _, ok := cfg[args[0]]; !ok {
 			return fmt.Errorf("%q not found in %s", args[0], vendorsFile)
 		}
 		urls = append(urls, args[0])
+		if len(args) == 2 {
+			newRef = args[1]
+		}
 	} else {
 		for u := range cfg {
 			urls = append(urls, u)
@@ -48,7 +52,11 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 	for _, u := range urls {
 		v := cfg[u]
-		_, commit, err := resolveCommit(v.URL, v.Ref)
+		ref := v.Ref
+		if newRef != "" {
+			ref = newRef
+		}
+		_, commit, err := resolveCommit(v.URL, ref)
 		if err != nil {
 			return fmt.Errorf("resolving %s: %w", v.URL, err)
 		}
@@ -67,6 +75,7 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 
 		fmt.Fprintf(cmd.OutOrStdout(), "updated %s %s -> %s\n", v.URL, v.Commit[:7], commit[:7])
 		v.Commit = commit
+		v.Ref = ref
 		cfg[u] = v
 	}
 

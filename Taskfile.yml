@@ -19,7 +19,7 @@ tasks:
   run:test-update:
     desc: Run the update command with https://github.com/frob/v
     cmds:
-      - task run -- update https://github.com/frob/v
+      - task run -- update https://github.com/frob/v 0.1.x
 
   test:
     desc: Run tests
