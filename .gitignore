@@ -3,3 +3,4 @@ vendors.toml
 # GoReleaser build output
 dist/*
 !dist/config.yaml
+!dist/homebrew/
