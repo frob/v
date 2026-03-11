@@ -61,6 +61,31 @@ path   = 'vendor/github.com/example/repo'
 
 Re-running `v add` for an existing URL updates the entry in place.
 
+### Update a repository
+
+```sh
+v update [url [ref]]
+```
+
+Re-fetches a vendored repository and updates `vendors.toml` with the new commit hash.
+
+- With no arguments, updates all vendors to the latest commit on their current ref.
+- With a URL, updates only that entry.
+- With a URL and ref, switches to the new ref and fetches its latest commit.
+
+**Examples:**
+
+```sh
+# Update all vendors
+v update
+
+# Update one vendor to the latest commit on its current ref
+v update https://github.com/example/repo
+
+# Switch a vendor to a different branch or tag
+v update https://github.com/example/repo v2.0.0
+```
+
 ## Contributing
 
 ### Prerequisites

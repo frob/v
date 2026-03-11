@@ -12,8 +12,14 @@ import (
 var updateCmd = &cobra.Command{
 	Use:   "update [url [ref]]",
 	Short: "Update vendored repositories to the latest commit for their ref",
-	Args:  cobra.MaximumNArgs(2),
-	RunE:  runUpdate,
+	Long: `Update re-fetches vendored repositories and updates vendors.toml with the
+latest commit hash for each entry's ref.
+
+With no arguments all vendors are updated. Provide a URL to update a single
+entry. Provide a URL and a ref to switch that entry to a different branch,
+tag, or commit hash.`,
+	Args: cobra.MaximumNArgs(2),
+	RunE: runUpdate,
 }
 
 func init() {

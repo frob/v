@@ -4,6 +4,14 @@
 
 ### Added
 - `update` command to re-fetch vendored repositories at their current ref or a new one
+- Optional second argument to `update` to switch a vendor to a different branch, tag, or commit hash
+- Long-form help descriptions for all commands (`v --help`, `v add --help`, `v update --help`)
+- `README.md` with installation, usage, and contributing instructions
+- `CHANGELOG.md`
+
+### Changed
+- `task clean` no longer deletes `dist/config.yaml` or `dist/homebrew/`
+- `dist/` is now fully excluded from version control; GoReleaser output is not tracked
 
 ## [0.0.1] - 2026-03-11
 
