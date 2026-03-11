@@ -19,7 +19,7 @@ tasks:
   clean:
     desc: Remove build artifacts
     cmds:
-      - find dist/ -mindepth 1 -not -name 'config.yaml' -not -path '*/homebrew*' -delete
+      - rm -rf dist/
 
   docker:build:
     desc: Build the Docker image
