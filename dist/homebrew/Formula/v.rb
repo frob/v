@@ -5,13 +5,13 @@
 class V < Formula
   desc "v is a CLI tool"
   homepage "https://github.com/frob/v"
-  version "0.0.0-SNAPSHOT-6e4c508"
+  version "0.0.0-SNAPSHOT-cc7d837"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.intel?
       url "https://github.com/frob/v/releases/download/v0.0.0/v_darwin_amd64.tar.gz"
-      sha256 "7ee914acf1656e882b5985b2c41cee93a4ca6e27307c6b37c220de7cbd784a7f"
+      sha256 "72940939f9a7ea5827bd7f2fcf8b6419697f9cead5f494da5bfe986bdd3de12f"
 
       def install
         bin.install "v"
@@ -19,7 +19,7 @@ class V < Formula
     end
     if Hardware::CPU.arm?
       url "https://github.com/frob/v/releases/download/v0.0.0/v_darwin_arm64.tar.gz"
-      sha256 "01d04fb1ada1ba1348047bd089f6098dd7cda4850660c017aacede1ac46d1096"
+      sha256 "e2018f89cf006cb147981804b60097dee8eeb00d33487e4aa38068060a364b41"
 
       def install
         bin.install "v"
@@ -30,14 +30,14 @@ class V < Formula
   on_linux do
     if Hardware::CPU.intel? && Hardware::CPU.is_64_bit?
       url "https://github.com/frob/v/releases/download/v0.0.0/v_linux_amd64.tar.gz"
-      sha256 "2ecdd9876a3de3208b9658e21009b7e06b587fdcfd6488efd57d7a10ca1122ed"
+      sha256 "fdcb17394abb84dec4b41ddffe5d4886d5ab62cac562eecf21ce8b2e30e362d3"
       def install
         bin.install "v"
       end
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
       url "https://github.com/frob/v/releases/download/v0.0.0/v_linux_arm64.tar.gz"
-      sha256 "fdbc8bbf1d1451adc7befcd394e9ab7e7abc0e401d75d3565ed4267d14985367"
+      sha256 "fb8e567da21a26fc5b7cebcebdc358286a56215ad5c53e7fb3a7d129a4b491e6"
       def install
         bin.install "v"
       end
