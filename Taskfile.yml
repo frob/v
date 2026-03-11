@@ -11,6 +11,16 @@ tasks:
     cmds:
       - go run . {{.CLI_ARGS}}
 
+  run:test-add:
+    desc: Run the add command with -d test-v and https://github.com/frob/v
+    cmds:
+      - task run -- add -d test-v https://github.com/frob/v
+
+  run:test-update:
+    desc: Run the update command with https://github.com/frob/v
+    cmds:
+      - task run -- update https://github.com/frob/v
+
   test:
     desc: Run tests
     cmds:

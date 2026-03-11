@@ -2,3 +2,6 @@ vendors.toml
 
 # GoReleaser build output
 dist/
+
+# Test artifact
+test-v
