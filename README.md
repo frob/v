@@ -2,6 +2,10 @@
 
 `v` manages vendored git repositories. It resolves refs to exact commit hashes, downloads repository contents (without the `.git` directory) into `vendor/`, and records everything in `vendors.toml`.
 
+## Use Case
+
+Sometimes a library needs to be included directly in a project — without a package manager integration — which means copying the source code and effectively forking it. This can be very error prone. `v` automatically documents the exact point at which a codebase is imported and provides a mechanism for keeping it up to date.
+
 ## Installation
 
 **Homebrew:**
@@ -13,6 +17,23 @@ brew install frob/v/v
 ```sh
 curl -sSf https://raw.githubusercontent.com/frob/v/main/install.sh | sh
 ```
+
+**Debian / Ubuntu:**
+```sh
+sudo dpkg -i v_*.deb
+```
+
+**Fedora / RHEL:**
+```sh
+sudo rpm -i v_*.rpm
+```
+
+**Arch Linux:**
+```sh
+sudo pacman -U v_*.pkg.tar.zst
+```
+
+Linux packages (`.deb`, `.rpm`, `.pkg.tar.zst`) are available on the [releases page](https://github.com/frob/v/releases).
 
 **Manual:** Download a binary from the [releases page](https://github.com/frob/v/releases).
 
@@ -67,7 +88,7 @@ Re-running `v add` for an existing URL updates the entry in place.
 v update [url [ref]]
 ```
 
-Re-fetches a vendored repository and updates `vendors.toml` with the new commit hash.
+Re-fetches a vendored repository and updates `vendors.toml` with the new commit hash. The destination path is taken from the existing `vendors.toml` entry; use `v add` with `-d` if you need to change it.
 
 - With no arguments, updates all vendors to the latest commit on their current ref.
 - With a URL, updates only that entry.
@@ -94,6 +115,13 @@ v update https://github.com/example/repo v2.0.0
 - [Task](https://taskfile.dev/) (`brew install go-task`)
 - [GoReleaser](https://goreleaser.com/) (for releases only)
 
+### Roadmap
+
+These are new features I'd like to add as time permits.
+
+- [ ] **Git round-trip support** — make it easy to temporarily restore the `.git` directory of a vendored dependency so you can make changes and contribute them back upstream, then re-vendor the updated code.
+- [ ] **Selective vendoring** — allow individual dependencies to be excluded from the `vendor/` tree (e.g. for license compatibility reasons) while still being tracked in `vendors.toml`.
+
 ### Development workflow
 
 All commands run through the Taskfile:
@@ -109,8 +137,8 @@ All commands run through the Taskfile:
 
 ### Adding a command
 
-1. Create a new file in `cmd/` (one file per subcommand).
-2. Register it on `rootCmd` via `init()` or an explicit `AddCommand` call.
+1. Create a new file in `cmd/` (one file per subcommand). See `cmd/add.go` for a reference implementation.
+2. Register it on `rootCmd` by calling `rootCmd.AddCommand(...)` inside the file's `init()` function.
 3. Return errors up the call stack — do not call `os.Exit` from subcommands.
 
 ### Adding a dependency
