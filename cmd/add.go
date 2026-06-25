@@ -103,7 +103,9 @@ func runAdd(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("writing %s: %w", vendorsFile, err)
 	}
 
-	fmt.Fprintf(cmd.OutOrStdout(), "added %s to %s\n", repoURL, vendorsFile)
+	if _, err := fmt.Fprintf(cmd.OutOrStdout(), "added %s to %s\n", repoURL, vendorsFile); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -209,7 +211,7 @@ func isCommitHash(s string) bool {
 		return false
 	}
 	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') && (c < 'A' || c > 'F') {
 			return false
 		}
 	}

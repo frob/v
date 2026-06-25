@@ -17,6 +17,7 @@ builds:
     binary: v
     ldflags:
       - -s -w
+      - -X github.com/frob/v/cmd.version={{ .Version }}
 
 archives:
   - formats:

@@ -26,6 +26,12 @@ tasks:
     cmds:
       - go test ./...
 
+  lint:
+    desc: Run the linters (go vet and golangci-lint)
+    cmds:
+      - go vet ./...
+      - golangci-lint run
+
   clean:
     desc: Remove build artifacts
     cmds:

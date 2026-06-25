@@ -6,6 +6,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// version is the build version, injected via -ldflags at release time by
+// GoReleaser. It defaults to "dev" for local and source builds.
+var version = "dev"
+
 var rootCmd = &cobra.Command{
 	Use:   "v",
 	Short: "Manage vendored git repositories",
@@ -14,6 +18,7 @@ var rootCmd = &cobra.Command{
 It resolves refs (branches, tags, or commit hashes) to exact commit hashes,
 downloads repository contents into vendor/ (without the .git directory),
 and records everything in vendors.toml.`,
+	Version: version,
 }
 
 func Execute() {

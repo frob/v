@@ -68,7 +68,9 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 		}
 
 		if commit == v.Commit {
-			fmt.Fprintf(cmd.OutOrStdout(), "%s is already up to date (%s)\n", v.URL, commit[:7])
+			if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%s is already up to date (%s)\n", v.URL, commit[:7]); err != nil {
+				return err
+			}
 			continue
 		}
 
@@ -79,7 +81,9 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("downloading %s: %w", v.URL, err)
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "updated %s %s -> %s\n", v.URL, v.Commit[:7], commit[:7])
+		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "updated %s %s -> %s\n", v.URL, v.Commit[:7], commit[:7]); err != nil {
+			return err
+		}
 		v.Commit = commit
 		v.Ref = ref
 		cfg[u] = v

@@ -2,12 +2,17 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-24
+
 ### Added
 - `update` command to re-fetch vendored repositories at their current ref or a new one
 - Optional second argument to `update` to switch a vendor to a different branch, tag, or commit hash
 - Long-form help descriptions for all commands (`v --help`, `v add --help`, `v update --help`)
+- `--version` flag reporting the build version
 - `README.md` with installation, usage, and contributing instructions
 - `CHANGELOG.md`
+- `LICENSE` (MIT)
+- GitHub Actions CI running tests and linting on pushes and pull requests
 
 ### Changed
 - `task clean` no longer deletes `dist/config.yaml` or `dist/homebrew/`

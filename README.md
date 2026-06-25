@@ -131,6 +131,7 @@ All commands run through the Taskfile:
 | `task build` | Build the binary to `dist/v` |
 | `task run -- <args>` | Run the CLI without building first |
 | `task test` | Run the test suite |
+| `task lint` | Run `go vet` and `golangci-lint` |
 | `task clean` | Remove build artifacts |
 | `task tidy` | Tidy Go modules |
 | `task vendor` | Re-vendor dependencies |
@@ -160,3 +161,7 @@ GITHUB_TOKEN=<token> task release
 ```
 
 To do a local dry-run first: `task release:snapshot`
+
+## License
+
+[MIT](LICENSE) © Frank Anderson
