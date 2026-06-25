@@ -39,3 +39,6 @@ jobs:
 
       - name: Lint
         run: task lint
+
+      - name: Integrated smoke test
+        run: task test:integrated

@@ -1,0 +1,53 @@
+site_name: v
+site_description: Manage vendored git repositories
+repo_url: https://github.com/frob/v
+repo_name: frob/v
+
+docs_dir: content
+site_dir: ../site
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      check_paths: true
+      base_path:
+        - .
+        - ..
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Tutorials: tutorials/index.md
+  - How-to: how-to/index.md
+  - Reference:
+      - Overview: reference/index.md
+      - vendors.toml: reference/vendors-toml.md
+      - CLI commands: reference/commands.md
+      - API (go doc): reference/api.md
+  - Explanation: explanation/index.md
+  - Contribution: contributing/index.md
+  - Changelog: changelog.md
+  - Plans: plans/index.md

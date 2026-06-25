@@ -1,73 +1,278 @@
 version: "3"
 
+# Every build/test/lint/docs step runs inside a container. The host needs
+# only Docker and go-task. See agent.md and the Contribution guide for the
+# tooling model. `verb:subject` naming throughout; run `task` (no args) to
+# list everything.
+
+vars:
+  PROJECT: v
+  IMAGE: "{{.PROJECT}}-tooling:dev"
+  DOCS_IMAGE: "{{.PROJECT}}-docs:dev"
+  GORELEASER_IMAGE: goreleaser/goreleaser:v2.5.0
+
+  # Run a command in the Go tooling container as the host user, with module
+  # and build caches redirected under ./.cache (gitignored, host-owned) so
+  # outputs are never root-owned and caches persist between runs.
+  RUN: >-
+    docker run --rm
+    -u $(id -u):$(id -g)
+    -e HOME=/tmp
+    -e GOPATH=/work/.cache/go
+    -e GOCACHE=/work/.cache/go-build
+    -e GOMODCACHE=/work/.cache/go-mod
+    -e GOLANGCI_LINT_CACHE=/work/.cache/golangci-lint
+    -e GOFLAGS=-buildvcs=false
+    -v {{.ROOT_DIR}}:/work -w /work
+    {{.IMAGE}}
+
+  # Run the docs (MkDocs) container as the host user. Its ENTRYPOINT is
+  # `mkdocs`, so pass mkdocs subcommands directly.
+  DOCS_RUN: >-
+    docker run --rm
+    -u $(id -u):$(id -g)
+    -e HOME=/tmp
+    -v {{.ROOT_DIR}}:/work -w /work/docs
+    {{.DOCS_IMAGE}}
+
 tasks:
-  build:
-    desc: Build the binary
+  default:
+    silent: true
     cmds:
-      - go build -o dist/v .
+      - task --list
+
+  init:
+    desc: >
+      One-time bootstrap for a fresh clone. Builds the Go tooling and docs
+      container images and primes the Go module cache. Run this once after
+      cloning; every other task is self-contained afterward.
+    deps: [build:container, build:container:docs]
+    cmds:
+      - "{{.RUN}} go mod download"
+
+  build:
+    desc: >
+      Compile the development binary to dist/v inside the tooling container.
+      Reports version "dev"; use build:release for versioned artifacts.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go build -o dist/v ."
+
+  build:release:
+    desc: >
+      Cross-compile optimized, versioned release artifacts for all targets
+      (linux/darwin × amd64/arm64) plus .deb/.rpm/Arch packages, into dist/,
+      without publishing. Uses GoReleaser in snapshot mode. This is the local
+      dry-run for a release.
+    cmds:
+      - >-
+        docker run --rm
+        -v {{.ROOT_DIR}}:/work -w /work
+        {{.GORELEASER_IMAGE}} release --snapshot --clean
+
+  build:container:
+    desc: >
+      Build the Go tooling container image ({{.IMAGE}}) used for build, test,
+      lint, and shell. Skipped when the image already exists and the Dockerfile
+      is unchanged, so dependent tasks don't pay a cached `docker build` on
+      every run; force a rebuild with `task build:container --force`.
+    sources:
+      - Dockerfile
+    status:
+      - docker image inspect {{.IMAGE}} >/dev/null 2>&1
+    cmds:
+      - docker build -t {{.IMAGE}} .
+
+  build:container:docs:
+    desc: >
+      Build the documentation toolchain image ({{.DOCS_IMAGE}}, MkDocs +
+      Material). Separate from the Go image so each stays small. Skipped when
+      the image already exists and docs/Dockerfile is unchanged; force a
+      rebuild with `task build:container:docs --force`.
+    sources:
+      - docs/Dockerfile
+    status:
+      - docker image inspect {{.DOCS_IMAGE}} >/dev/null 2>&1
+    cmds:
+      - docker build -t {{.DOCS_IMAGE}} docs
+
+  build:docs:
+    desc: >
+      Generate the full documentation site into ./site. First regenerates the
+      API reference with `go doc` (tooling container), then renders the
+      MkDocs site (docs container). Output is gitignored.
+    deps: [build:container, build:container:docs]
+    cmds:
+      - "{{.RUN}} sh docs/gen-api.sh"
+      - "{{.DOCS_RUN}} build --clean"
+
+  test:
+    desc: Run the Go test suite (`go test ./...`) inside the tooling container.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go test ./..."
+
+  test:force:
+    desc: >
+      Run the Go test suite without the build/test cache (`go test -count=1`),
+      forcing every test to re-execute even when nothing changed. Use when a
+      run shows "(cached)" and you want a fresh result.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go test -count=1 ./..."
+
+  test:coverage:
+    desc: >
+      Run the Go test suite with coverage inside the tooling container and
+      print a per-function and total coverage summary. Writes the profile to
+      .cache/coverage.out (gitignored) for further inspection.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go test -coverprofile=.cache/coverage.out ./..."
+      - "{{.RUN}} go tool cover -func=.cache/coverage.out"
+
+  lint:
+    desc: >
+      Run static analysis inside the tooling container: `go vet` followed by
+      `golangci-lint run`.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go vet ./..."
+      - "{{.RUN}} golangci-lint run"
+
+  check:
+    desc: >
+      Full quality gate: run the test suite, all linters, and the integrated
+      smoke test against a real remote. This is what CI runs and what should
+      pass before opening a PR. Requires network access for test:integrated.
+    cmds:
+      - task: test
+      - task: lint
+      - task: test:integrated
+
+  clean:
+    desc: Remove build outputs (dist/ and the generated docs site/).
+    cmds:
+      - rm -rf dist/ site/
+
+  clean:all:
+    desc: >
+      Remove build outputs and all cached dependencies (./.cache), and delete
+      the locally built tooling/docs images. The next build is a cold build.
+    cmds:
+      - rm -rf dist/ site/ .cache/
+      - docker rmi -f {{.IMAGE}} {{.DOCS_IMAGE}} 2>/dev/null || true
+
+  shell:
+    desc: Open an interactive shell inside the Go tooling container.
+    deps: [build:container]
+    interactive: true
+    cmds:
+      - >-
+        docker run --rm -it
+        -u $(id -u):$(id -g)
+        -e HOME=/tmp
+        -e GOPATH=/work/.cache/go
+        -e GOCACHE=/work/.cache/go-build
+        -e GOMODCACHE=/work/.cache/go-mod
+        -v {{.ROOT_DIR}}:/work -w /work
+        {{.IMAGE}} bash
+
+  serve:docs:
+    desc: >
+      Build the docs site and serve it locally at http://localhost:8080 via
+      Caddy. Ctrl-C to stop.
+    deps: [build:docs]
+    cmds:
+      - >-
+        docker run --rm -p 8080:8080
+        -v {{.ROOT_DIR}}/site:/srv
+        -v {{.ROOT_DIR}}/docs/Caddyfile:/etc/caddy/Caddyfile
+        caddy:2-alpine
+
+  deploy:release:
+    desc: >
+      Cut and publish a release with GoReleaser: GitHub release with binaries
+      and checksums, Linux packages (.deb/.rpm/Arch), and the Homebrew formula
+      pushed to frob/homebrew-v. Requires a pushed git tag and GITHUB_TOKEN in
+      the environment. Run build:release first as a dry-run.
+    cmds:
+      - >-
+        docker run --rm
+        -e GITHUB_TOKEN
+        -v {{.ROOT_DIR}}:/work -w /work
+        {{.GORELEASER_IMAGE}} release --clean
+
+  release:check:
+    desc: Validate the GoReleaser configuration without building anything.
+    cmds:
+      - >-
+        docker run --rm
+        -v {{.ROOT_DIR}}:/work -w /work
+        {{.GORELEASER_IMAGE}} check
 
   run:
-    desc: Run the CLI
+    desc: "Run the CLI from source inside the tooling container (usage: task run -- <args>)."
+    deps: [build:container]
     cmds:
-      - go run . {{.CLI_ARGS}}
+      - "{{.RUN}} go run . {{.CLI_ARGS}}"
+
+  get:
+    desc: "Add a Go dependency (usage: task get -- <module@version>). Run `task tidy` after."
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go get {{.CLI_ARGS}}"
+
+  tidy:
+    desc: Tidy go.mod / go.sum inside the tooling container.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go mod tidy"
+
+  vendor:
+    desc: >
+      Re-vendor the project's own Go dependencies into vendor/ (`go mod
+      vendor`). Run after `task get` + `task tidy` when adding a dependency;
+      vendor/ is committed so builds need no network.
+    deps: [build:container]
+    cmds:
+      - "{{.RUN}} go mod vendor"
 
   run:test-add:
-    desc: Run the add command with -d test-v and https://github.com/frob/v
+    desc: "Smoke-test `add`: vendor https://github.com/frob/v into ./test-v."
+    deps: [build:container]
     cmds:
       - task run -- add -d test-v https://github.com/frob/v
 
   run:test-update:
-    desc: Run the update command with https://github.com/frob/v
+    desc: "Smoke-test `update`: update https://github.com/frob/v to its 0.1.x ref."
+    deps: [build:container]
     cmds:
       - task run -- update https://github.com/frob/v 0.1.x
 
-  test:
-    desc: Run tests
+  clear:test-artifacts:
+    desc: >
+      Remove the artifacts left behind by the run:test-add / run:test-update
+      smoke tests: the ./test-v vendored tree and the generated vendors.toml.
+      Both are gitignored, so this is safe to run anytime.
     cmds:
-      - go test ./...
+      - rm -rf test-v vendors.toml
 
-  lint:
-    desc: Run the linters (go vet and golangci-lint)
+  test:integrated:
+    desc: >
+      End-to-end smoke test of the CLI against a real remote. Clears any prior
+      artifacts, runs run:test-add then run:test-update against
+      https://github.com/frob/v, asserts vendors.toml recorded the updated
+      0.1.x ref and that ./test-v was populated, then clears the artifacts
+      again (even if the run fails). Requires network access.
     cmds:
-      - go vet ./...
-      - golangci-lint run
-
-  clean:
-    desc: Remove build artifacts
-    cmds:
-      - rm -rf dist/
-
-  docker:build:
-    desc: Build the Docker image
-    cmds:
-      - docker build -t v .
-
-  get:
-    desc: "Add a dependency (usage: task get -- <module@version>)"
-    cmds:
-      - go get {{.CLI_ARGS}}
-
-  tidy:
-    desc: Tidy go modules
-    cmds:
-      - go mod tidy
-
-  vendor:
-    desc: Vendor dependencies
-    cmds:
-      - go mod vendor
-
-  release:check:
-    desc: Validate goreleaser config
-    cmds:
-      - goreleaser check
-
-  release:snapshot:
-    desc: Build all platform binaries locally without publishing
-    cmds:
-      - goreleaser release --snapshot --clean
-
-  release:
-    desc: Cut a release and publish (requires GITHUB_TOKEN)
-    cmds:
-      - goreleaser release --clean
+      - defer: { task: clear:test-artifacts }
+      - task: clear:test-artifacts
+      - task: run:test-add
+      - task: run:test-update
+      - cmd: |
+          set -e
+          test -s vendors.toml
+          grep -q "0.1.x" vendors.toml
+          test -n "$(ls -A test-v 2>/dev/null)"
+          echo "test:integrated passed: add + update succeeded against github.com/frob/v"

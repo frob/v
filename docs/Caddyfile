@@ -1,0 +1,9 @@
+# Serves the built documentation site on port 8080 for local review.
+# Used by `task serve:docs`, which mounts the generated ./site directory
+# at /srv. This is a preview server only — production hosting is out of
+# scope for this file.
+:8080 {
+	root * /srv
+	file_server
+	encode gzip
+}

@@ -5,8 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/pelletier/go-toml/v2"
 	"github.com/spf13/cobra"
 )
@@ -259,5 +264,219 @@ func TestDefaultPath(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("defaultPath(%q) = %q, want %q", tc.url, got, tc.want)
 		}
+	}
+}
+
+func TestIsCommitHash(t *testing.T) {
+	cases := []struct {
+		name string
+		s    string
+		want bool
+	}{
+		{name: "valid lowercase", s: "aabbccddaabbccddaabbccddaabbccddaabbccdd", want: true},
+		{name: "valid uppercase", s: "AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD", want: true},
+		{name: "valid mixed case", s: "AaBbCcDd1234567890aabbccddeeff0011223344", want: true},
+		{name: "valid all digits", s: "0123456789012345678901234567890123456789", want: true},
+		{name: "empty", s: "", want: false},
+		{name: "too short", s: "aabbccdd", want: false},
+		{name: "too long", s: "aabbccddaabbccddaabbccddaabbccddaabbccdd0", want: false},
+		{name: "non-hex letter g", s: "gabbccddaabbccddaabbccddaabbccddaabbccdd", want: false},
+		{name: "non-hex symbol", s: "-abbccddaabbccddaabbccddaabbccddaabbccdd", want: false},
+		{name: "ref name not a hash", s: "main", want: false},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := isCommitHash(tc.s); got != tc.want {
+				t.Errorf("isCommitHash(%q) = %v, want %v", tc.s, got, tc.want)
+			}
+		})
+	}
+}
+
+// initSourceRepo creates a real single-commit git repository in a temp dir using
+// go-git's in-process API (no network, no git binary) and returns its path and
+// the commit hash. It serves as a local "remote" for cloneRepo tests.
+func initSourceRepo(t *testing.T) (dir, commit string) {
+	t.Helper()
+	dir = t.TempDir()
+	repo, err := git.PlainInit(dir, false)
+	if err != nil {
+		t.Fatalf("init: %v", err)
+	}
+	w, err := repo.Worktree()
+	if err != nil {
+		t.Fatalf("worktree: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("hello\n"), 0o644); err != nil {
+		t.Fatalf("write file: %v", err)
+	}
+	if _, err := w.Add("README.md"); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	h, err := w.Commit("initial commit", &git.CommitOptions{
+		Author: &object.Signature{Name: "Test", Email: "test@example.com", When: time.Unix(0, 0).UTC()},
+	})
+	if err != nil {
+		t.Fatalf("commit: %v", err)
+	}
+	return dir, h.String()
+}
+
+func TestCloneRepo(t *testing.T) {
+	src, commit := initSourceRepo(t)
+	dest := filepath.Join(t.TempDir(), "clone")
+
+	if err := cloneRepo(src, commit, dest); err != nil {
+		t.Fatalf("cloneRepo: %v", err)
+	}
+
+	if _, err := os.Stat(filepath.Join(dest, "README.md")); err != nil {
+		t.Errorf("expected README.md in clone: %v", err)
+	}
+	// cloneRepo strips the .git directory so vendored trees carry no history.
+	if _, err := os.Stat(filepath.Join(dest, ".git")); !os.IsNotExist(err) {
+		t.Errorf(".git should be removed, stat err = %v", err)
+	}
+}
+
+func TestCloneRepo_DestinationExists(t *testing.T) {
+	src, commit := initSourceRepo(t)
+	dest := t.TempDir()
+	// Pre-populate dest with a repo so PlainClone reports it already exists.
+	if _, err := git.PlainInit(dest, false); err != nil {
+		t.Fatalf("init dest: %v", err)
+	}
+
+	err := cloneRepo(src, commit, dest)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "already exists") {
+		t.Errorf("error = %q, want it to mention %q", err, "already exists")
+	}
+}
+
+func TestCloneRepo_CloneError(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "does-not-exist")
+	dest := filepath.Join(t.TempDir(), "clone")
+
+	if err := cloneRepo(missing, fakeHash, dest); err == nil {
+		t.Fatal("expected error cloning from a nonexistent source, got nil")
+	}
+}
+
+// stubRemoteRefs replaces listRemoteRefs with a fixture for the duration of a test.
+func stubRemoteRefs(t *testing.T, refs []*plumbing.Reference, listErr error) {
+	t.Helper()
+	orig := listRemoteRefs
+	listRemoteRefs = func(string) ([]*plumbing.Reference, error) { return refs, listErr }
+	t.Cleanup(func() { listRemoteRefs = orig })
+}
+
+func TestRemoteCommit(t *testing.T) {
+	const (
+		mainHash = "1111111111111111111111111111111111111111"
+		devHash  = "2222222222222222222222222222222222222222"
+		tagHash  = "3333333333333333333333333333333333333333"
+		otherHsh = "9999999999999999999999999999999999999999"
+	)
+	hashRef := func(name, hash string) *plumbing.Reference {
+		return plumbing.NewHashReference(plumbing.ReferenceName(name), plumbing.NewHash(hash))
+	}
+	headTo := func(target string) *plumbing.Reference {
+		return plumbing.NewSymbolicReference(plumbing.HEAD, plumbing.ReferenceName(target))
+	}
+
+	cases := []struct {
+		name     string
+		inputRef string
+		refs     []*plumbing.Reference
+		listErr  error
+		wantRef  string
+		wantHash string
+		wantErr  bool
+	}{
+		{
+			name:     "default branch via HEAD symref",
+			inputRef: "",
+			refs:     []*plumbing.Reference{headTo("refs/heads/main"), hashRef("refs/heads/main", mainHash)},
+			wantRef:  "main",
+			wantHash: mainHash,
+		},
+		{
+			name:     "branch ref",
+			inputRef: "dev",
+			refs:     []*plumbing.Reference{hashRef("refs/heads/dev", devHash)},
+			wantRef:  "dev",
+			wantHash: devHash,
+		},
+		{
+			name:     "lightweight tag",
+			inputRef: "v2.0.0",
+			refs:     []*plumbing.Reference{hashRef("refs/tags/v2.0.0", tagHash)},
+			wantRef:  "v2.0.0",
+			wantHash: tagHash,
+		},
+		{
+			name:     "annotated tag prefers peeled ref",
+			inputRef: "v1.0.0",
+			refs:     []*plumbing.Reference{hashRef("refs/tags/v1.0.0", otherHsh), hashRef("refs/tags/v1.0.0^{}", tagHash)},
+			wantRef:  "v1.0.0",
+			wantHash: tagHash,
+		},
+		{
+			name:     "explicit commit hash passes through",
+			inputRef: mainHash,
+			wantRef:  mainHash,
+			wantHash: mainHash,
+		},
+		{
+			name:     "ref not found",
+			inputRef: "nope",
+			refs:     []*plumbing.Reference{hashRef("refs/heads/main", mainHash)},
+			wantErr:  true,
+		},
+		{
+			name:     "list error",
+			inputRef: "",
+			listErr:  fmt.Errorf("no network"),
+			wantErr:  true,
+		},
+		{
+			name:     "HEAD missing for default branch",
+			inputRef: "",
+			refs:     []*plumbing.Reference{hashRef("refs/heads/main", mainHash)},
+			wantErr:  true,
+		},
+		{
+			name:     "HEAD target branch missing",
+			inputRef: "",
+			refs:     []*plumbing.Reference{headTo("refs/heads/ghost")},
+			wantErr:  true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			stubRemoteRefs(t, tc.refs, tc.listErr)
+
+			gotRef, gotHash, err := remoteCommit("https://example.com/org/repo", tc.inputRef)
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected error, got ref=%q hash=%q", gotRef, gotHash)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if gotRef != tc.wantRef {
+				t.Errorf("ref = %q, want %q", gotRef, tc.wantRef)
+			}
+			if gotHash != tc.wantHash {
+				t.Errorf("hash = %q, want %q", gotHash, tc.wantHash)
+			}
+		})
 	}
 }

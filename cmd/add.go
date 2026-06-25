@@ -35,6 +35,16 @@ var resolveCommit = remoteCommit
 // downloadRepo is a variable so tests can replace the implementation.
 var downloadRepo = cloneRepo
 
+// listRemoteRefs lists the refs a remote advertises. It is a variable so tests
+// can replace it with a fixture instead of reaching the network.
+var listRemoteRefs = func(repoURL string) ([]*plumbing.Reference, error) {
+	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
+		Name: "origin",
+		URLs: []string{repoURL},
+	})
+	return rem.List(&git.ListOptions{})
+}
+
 var addDestination string
 
 var addCmd = &cobra.Command{
@@ -146,12 +156,7 @@ func cloneRepo(repoURL, commit, dest string) error {
 }
 
 func remoteCommit(repoURL, ref string) (resolvedRef, commit string, err error) {
-	rem := git.NewRemote(memory.NewStorage(), &config.RemoteConfig{
-		Name: "origin",
-		URLs: []string{repoURL},
-	})
-
-	refs, err := rem.List(&git.ListOptions{})
+	refs, err := listRemoteRefs(repoURL)
 	if err != nil {
 		return "", "", fmt.Errorf("listing remote refs: %w", err)
 	}

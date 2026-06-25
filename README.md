@@ -111,9 +111,24 @@ v update https://github.com/example/repo v2.0.0
 
 ### Prerequisites
 
-- [Go](https://go.dev/) 1.24+
+Every build/test/lint/docs step runs **inside a container** — you do not
+install Go, `golangci-lint`, or GoReleaser on your machine. The only host
+prerequisites are:
+
+- A container runtime: [Docker](https://www.docker.com/),
+  [Podman](https://podman.io/), or [OrbStack](https://orbstack.dev/)
 - [Task](https://taskfile.dev/) (`brew install go-task`)
-- [GoReleaser](https://goreleaser.com/) (for releases only)
+
+Bootstrap a fresh clone with:
+
+```sh
+task init     # build the tooling + docs container images, prime caches
+task check    # run tests and linters
+```
+
+Full contributor docs (including the documentation site) live in
+`docs/content/contributing/` — run `task serve:docs` and open
+<http://localhost:8080>.
 
 ### Roadmap
 
@@ -124,17 +139,25 @@ These are new features I'd like to add as time permits.
 
 ### Development workflow
 
-All commands run through the Taskfile:
+All commands run through the Taskfile (run `task` with no arguments to list
+everything). Each task wraps a containerized toolchain.
 
 | Task | Description |
 |------|-------------|
+| `task init` | One-time bootstrap: build container images, prime caches |
 | `task build` | Build the binary to `dist/v` |
-| `task run -- <args>` | Run the CLI without building first |
+| `task build:release` | Cross-compile all release artifacts locally (no publish) |
+| `task run -- <args>` | Run the CLI from source |
 | `task test` | Run the test suite |
 | `task lint` | Run `go vet` and `golangci-lint` |
-| `task clean` | Remove build artifacts |
+| `task check` | Quality gate: test + lint |
+| `task build:docs` | Generate the documentation site into `site/` |
+| `task serve:docs` | Build the docs and serve at <http://localhost:8080> |
+| `task shell` | Interactive shell inside the tooling container |
+| `task clean` | Remove build outputs (`dist/`, `site/`) |
+| `task clean:all` | Also remove caches and locally built images |
 | `task tidy` | Tidy Go modules |
-| `task vendor` | Re-vendor dependencies |
+| `task deploy:release` | Cut and publish a release via GoReleaser |
 
 ### Adding a command
 
@@ -157,10 +180,10 @@ Tag a commit and run:
 ```sh
 git tag v0.x.0
 git push origin v0.x.0
-GITHUB_TOKEN=<token> task release
+GITHUB_TOKEN=<token> task deploy:release
 ```
 
-To do a local dry-run first: `task release:snapshot`
+To do a local dry-run first: `task build:release`
 
 ## License
 

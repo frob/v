@@ -1,7 +1,25 @@
+# v's own self-vendoring manifest (this repo is also a v workspace)
 vendors.toml
 
 # GoReleaser build output
 dist/
 
+# Generated documentation site
+site/
+
+# Generated API reference (regenerated from `go doc` on every `task build:docs`)
+docs/content/reference/api.md
+
+# Containerized-tooling caches (Go module/build cache, golangci-lint cache),
+# redirected here by the Taskfile so they are host-owned and persistent.
+.cache/
+
 # Test artifact
 test-v
+
+# go-task fingerprint cache (sources/status checksums)
+.task/
+
+# Per-user local Claude Code settings (the shared .claude/docs/ stays tracked).
+# Ignored here too so it doesn't depend on a contributor's global gitignore.
+.claude/settings.local.json
