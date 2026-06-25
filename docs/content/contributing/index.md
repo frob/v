@@ -60,3 +60,12 @@ task.
 See the [Plans](../plans/index.md) and the project README. Releases are cut
 with GoReleaser via `task deploy:release` (requires `GITHUB_TOKEN` and a
 pushed tag).
+
+## Publishing the docs
+
+This site publishes to [GitHub Pages](https://frob.github.io/v/) automatically.
+The `Docs` workflow (`.github/workflows/docs.yml`) runs on every push to the
+default branch, rebuilds the site with the same `task build:docs` used locally,
+and deploys the `site/` output. There is nothing to run by hand — merge to the
+default branch and the live site updates. Use `task serve:docs` to preview
+changes before they merge.

@@ -1,5 +1,6 @@
 site_name: v
 site_description: Manage vendored git repositories
+site_url: https://frob.github.io/v/
 repo_url: https://github.com/frob/v
 repo_name: frob/v
 

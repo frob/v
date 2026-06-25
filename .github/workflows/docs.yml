@@ -1,0 +1,70 @@
+name: Docs
+
+# Build the MkDocs site and publish it to GitHub Pages. The build reuses the
+# exact same containerized entry point as local development — `task build:docs`
+# — so CI renders the site with the identical toolchain (see agent.md and the
+# containerized-tooling rules). Deployment is the only step that lives outside
+# the Taskfile, because it needs the GitHub Pages OIDC token that only the
+# official actions can mint.
+#
+# Publishing follows the repository's default branch automatically: the trigger
+# listens on every push, and the jobs are gated on
+# `github.event.repository.default_branch`, so there is no hardcoded branch name
+# to update if the default ever changes.
+
+on:
+  push:
+  workflow_dispatch:
+
+# Least privilege: read the repo, write to Pages, and mint the OIDC token the
+# deploy step exchanges for a Pages deployment.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two Pages deployments race; let an in-flight run finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build site
+    # Only build on the default branch — skip feature-branch pushes, which CI
+    # already covers in ci.yml.
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Builds the Go tooling + docs container images, regenerates the API and
+      # CLI references, and renders MkDocs into ./site. Identical to a local
+      # `task build:docs`.
+      - name: Build docs
+        run: task build:docs
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
