@@ -17,7 +17,7 @@ OUT=docs/content/reference/api.md
 		echo "## Package \`${pkg}\`"
 		echo
 		echo '```text'
-		go doc -all "${pkg}" 2>/dev/null || echo "(no exported symbols)"
+		go doc -all -u "${pkg}" 2>/dev/null || echo "(no symbols)"
 		echo '```'
 		echo
 	done

@@ -33,5 +33,17 @@ v update
 Updates all entries in `vendors.toml` to the latest commit on their current
 ref.
 
+## Commit `vendors.toml` to source control
+
+```sh
+git add vendors.toml
+git commit -m "Vendor example/repo"
+```
+
+Always track `vendors.toml` in version control — it is the manifest that
+makes a vendored tree reproducible. Committing the `vendor/` directory itself
+is optional (see the [`vendors.toml` reference](../reference/vendors-toml.md#source-control)),
+but the manifest should always be committed.
+
 !!! note "Placeholder"
     Add new recipes here as common workflows emerge.

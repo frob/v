@@ -16,29 +16,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
+      # The only host prerequisites are Docker (preinstalled on the runner)
+      # and Task. Every build/test/lint step runs inside the pinned tooling
+      # container the Taskfile builds, so CI uses the exact same toolchain as
+      # local development — see agent.md and the containerized-tooling rules.
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          install-mode: binary
-          args: --version
-
-      - name: Test
-        run: task test
-
-      - name: Lint
-        run: task lint
-
-      - name: Integrated smoke test
-        run: task test:integrated
+      # Mirror of `task check`: test + lint + integrated smoke test, all run
+      # inside v-tooling:dev. To reproduce a CI failure locally, run the same
+      # command: `task check`.
+      - name: Quality gate
+        run: task check

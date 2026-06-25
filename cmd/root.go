@@ -1,3 +1,11 @@
+// Package cmd implements the v command-line interface.
+//
+// Each subcommand lives in its own file (add.go, update.go) and registers
+// itself on rootCmd via an init function. Subcommands return errors up the
+// stack; only Execute, the single error boundary, calls os.Exit. The package
+// exports only Execute — everything else (the cobra command values, their RunE
+// handlers, and the vendoring helpers) is unexported because nothing here is
+// meant to be imported by other packages.
 package cmd
 
 import (

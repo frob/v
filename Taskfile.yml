@@ -99,11 +99,13 @@ tasks:
   build:docs:
     desc: >
       Generate the full documentation site into ./site. First regenerates the
-      API reference with `go doc` (tooling container), then renders the
-      MkDocs site (docs container). Output is gitignored.
+      API reference with `go doc` and the per-command CLI reference with
+      cobra/doc (tooling container), then renders the MkDocs site (docs
+      container). Output is gitignored.
     deps: [build:container, build:container:docs]
     cmds:
       - "{{.RUN}} sh docs/gen-api.sh"
+      - "{{.RUN}} sh docs/gen-cli.sh"
       - "{{.DOCS_RUN}} build --clean"
 
   test:

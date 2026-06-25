@@ -18,6 +18,12 @@ commit hash**, and the destination path. The resolved commit is the key
 detail: a branch name drifts, but the recorded hash pins exactly what is in
 `vendor/`.
 
+For that provenance to survive, `vendors.toml` belongs in source control.
+Committing it is what lets a teammate — or a future you — reproduce the exact
+`vendor/` contents and see, through its history, when each dependency moved.
+See the [`vendors.toml` reference](../reference/vendors-toml.md#source-control)
+for the recommended workflow.
+
 ## No `.git` directory
 
 `v` downloads repository *contents*, not the git history. The vendored tree

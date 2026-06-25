@@ -27,3 +27,15 @@ path   = 'vendor/github.com/example/repo'
 - `v update` re-resolves `ref` to its latest `commit` and re-downloads.
 - The destination `path` is taken from the existing entry on update; use
   `v add -d` to change it.
+
+## Source control
+
+Commit `vendors.toml` to version control. It is the manifest that records
+what was vendored and at which exact commit, and committing it is what makes
+a vendored tree reproducible: anyone with the file can recreate the same
+`vendor/` contents, and its history shows when each dependency changed.
+
+Whether you also commit the `vendor/` directory itself is your choice —
+checking it in gives offline, build-time-stable sources, while leaving it out
+keeps the repository small and relies on `v` to repopulate it. Either way,
+`vendors.toml` should be tracked.

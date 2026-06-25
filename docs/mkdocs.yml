@@ -47,6 +47,10 @@ nav:
       - vendors.toml: reference/vendors-toml.md
       - CLI commands: reference/commands.md
       - API (go doc): reference/api.md
+      - CLI (cobra):
+          - v: reference/api/v.md
+          - v add: reference/api/v_add.md
+          - v update: reference/api/v_update.md
   - Explanation: explanation/index.md
   - Contribution: contributing/index.md
   - Changelog: changelog.md
