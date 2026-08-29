@@ -9,7 +9,7 @@ vars:
   PROJECT: v
   IMAGE: "{{.PROJECT}}-tooling:dev"
   DOCS_IMAGE: "{{.PROJECT}}-docs:dev"
-  GORELEASER_IMAGE: goreleaser/goreleaser:v2.5.0
+  GORELEASER_IMAGE: goreleaser/goreleaser:v2.18.0
 
   # Run a command in the Go tooling container as the host user, with module
   # and build caches redirected under ./.cache (gitignored, host-owned) so
