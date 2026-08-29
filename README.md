@@ -15,7 +15,7 @@ brew install frob/v/v
 
 **Shell script (auto-detects OS and package manager):**
 ```sh
-curl -sSf https://raw.githubusercontent.com/frob/v/main/install.sh | sh
+curl -sSf https://raw.githubusercontent.com/frob/v/0.2.x/install.sh | sh
 ```
 
 **Debian / Ubuntu:**
