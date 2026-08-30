@@ -12,7 +12,7 @@ the **[Task](https://taskfile.dev/)** runner. You do not install Go,
 
 ```sh
 task init     # build the tooling + docs containers, prime the module cache
-task check    # run tests and linters
+task check    # run tests, linters, and the integrated smoke test (needs network)
 ```
 
 Run `task` with no arguments to list every available task.
@@ -24,7 +24,8 @@ Run `task` with no arguments to list every available task.
 | `task build` | Compile the binary to `dist/v`. |
 | `task test` | Run the test suite. |
 | `task lint` | Run `go vet` and `golangci-lint`. |
-| `task check` | Quality gate: test + lint. |
+| `task check` | Quality gate: test + lint + `test:integrated`. Needs network. |
+| `task test:integrated` | End-to-end smoke test against a real remote. Needs network. |
 | `task build:docs` | Generate this documentation site into `site/`. |
 | `task serve:docs` | Build the docs and serve them at <http://localhost:8080>. |
 | `task shell` | Open an interactive shell inside the tooling container. |
@@ -38,6 +39,10 @@ Run `task` with no arguments to list every available task.
    file's `init()`.
 3. Return errors up the call stack — never call `os.Exit` from a
    subcommand. `cmd/root.go` owns the single error boundary.
+4. Document the command in [CLI commands](../reference/commands.md).
+5. Add its generated cobra page to the `nav` in `docs/mkdocs.yml` under
+   **Reference → CLI (cobra)**. `task build:docs` writes the page into
+   `docs/content/reference/cli/`, but the nav entry is added by hand.
 
 ## Adding a dependency
 

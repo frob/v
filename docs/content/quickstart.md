@@ -13,7 +13,7 @@ Get a repository vendored into your project in a few minutes.
 === "Shell script"
 
     ```sh
-    curl -sSf https://raw.githubusercontent.com/frob/v/main/install.sh | sh
+    curl -sSf https://raw.githubusercontent.com/frob/v/0.2.x/install.sh | sh
     ```
 
 See [Installation in the README](https://github.com/frob/v#installation) for

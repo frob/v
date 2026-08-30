@@ -24,7 +24,9 @@ the user-facing interface — they are implementation details wrapped by tasks.
 Common tasks:
 
 - `task init` — one-time bootstrap (builds the container images, primes caches).
-- `task check` — quality gate (test + lint); run before opening a PR.
+- `task check` — quality gate (test + lint + `test:integrated`); run before
+  opening a PR. The integrated smoke test clones a real remote, so this task
+  needs network access.
 - `task build` — compile `dist/v`.
 - `task build:release` — local cross-compile of all release artifacts.
 - `task shell` — interactive shell in the tooling container.
@@ -36,14 +38,15 @@ Task naming follows `verb:subject` (`build:docs`, `serve:docs`,
 
 Docs source is Markdown under `docs/content/` (Diataxis structure). Build the
 site with `task build:docs` (output `./site`, gitignored) and preview it with
-`task serve:docs` → <http://localhost:8080>. The API reference under
-`docs/content/reference/api.md` is regenerated from `go doc` on every docs
-build — do not hand-edit it.
+`task serve:docs` → <http://localhost:8080>. Two reference pages are
+regenerated on every docs build and are gitignored — do not hand-edit either:
+`docs/content/reference/api.md` from `go doc`, and
+`docs/content/reference/cli/` from the cobra command tree.
 
 ## Architecture
 
-Command structure, the single `os.Exit` error boundary, the multi-stage
-Docker build, vendoring, and the release pipeline are documented in
+Command structure, the single `os.Exit` error boundary, the containerized
+toolchain, vendoring, and the release pipeline are documented in
 `.claude/docs/architectural_patterns.md`. The short version:
 
 - `main.go` only calls `cmd.Execute()`. All CLI logic is in the `cmd` package.

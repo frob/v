@@ -123,7 +123,7 @@ Bootstrap a fresh clone with:
 
 ```sh
 task init     # build the tooling + docs container images, prime caches
-task check    # run tests and linters
+task check    # run tests, linters, and the integrated smoke test (needs network)
 ```
 
 Full contributor docs (including the documentation site) live in
@@ -149,21 +149,33 @@ everything). Each task wraps a containerized toolchain.
 | `task build:release` | Cross-compile all release artifacts locally (no publish) |
 | `task run -- <args>` | Run the CLI from source |
 | `task test` | Run the test suite |
+| `task test:force` | Run the test suite with `-count=1`, bypassing the test cache |
+| `task test:coverage` | Run the tests with coverage and print a summary |
+| `task test:integrated` | End-to-end smoke test against a real remote (needs network) |
 | `task lint` | Run `go vet` and `golangci-lint` |
-| `task check` | Quality gate: test + lint |
+| `task check` | Quality gate: test + lint + `test:integrated` (needs network) |
 | `task build:docs` | Generate the documentation site into `site/` |
 | `task serve:docs` | Build the docs and serve at <http://localhost:8080> |
 | `task shell` | Interactive shell inside the tooling container |
 | `task clean` | Remove build outputs (`dist/`, `site/`) |
 | `task clean:all` | Also remove caches and locally built images |
 | `task tidy` | Tidy Go modules |
+| `task vendor` | Re-vendor Go dependencies into `vendor/` |
+| `task release:check` | Validate `.goreleaser.yml` without building |
 | `task deploy:release` | Cut and publish a release via GoReleaser |
+
+`task run:test-add`, `task run:test-update`, and `task clear:test-artifacts`
+are the individual steps `test:integrated` composes; run them directly when
+debugging a smoke-test failure.
 
 ### Adding a command
 
 1. Create a new file in `cmd/` (one file per subcommand). See `cmd/add.go` for a reference implementation.
 2. Register it on `rootCmd` by calling `rootCmd.AddCommand(...)` inside the file's `init()` function.
 3. Return errors up the call stack — do not call `os.Exit` from subcommands.
+4. Document it in `docs/content/reference/commands.md`.
+5. Add its generated cobra page to the `nav` in `docs/mkdocs.yml` under
+   **Reference → CLI (cobra)** — those pages are generated but listed by hand.
 
 ### Adding a dependency
 

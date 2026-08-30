@@ -7,8 +7,10 @@ dist/
 # Generated documentation site
 site/
 
-# Generated API reference (regenerated from `go doc` on every `task build:docs`)
+# Generated reference pages, both rebuilt by every `task build:docs`:
+# api.md from `go doc`, cli/ from the cobra command tree.
 docs/content/reference/api.md
+docs/content/reference/cli/
 
 # Containerized-tooling caches (Go module/build cache, golangci-lint cache),
 # redirected here by the Taskfile so they are host-owned and persistent.

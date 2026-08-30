@@ -49,9 +49,9 @@ nav:
       - CLI commands: reference/commands.md
       - API (go doc): reference/api.md
       - CLI (cobra):
-          - v: reference/api/v.md
-          - v add: reference/api/v_add.md
-          - v update: reference/api/v_update.md
+          - v: reference/cli/v.md
+          - v add: reference/cli/v_add.md
+          - v update: reference/cli/v_update.md
   - Explanation: explanation/index.md
   - Contribution: contributing/index.md
   - Changelog: changelog.md

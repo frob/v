@@ -33,8 +33,8 @@ the metadata that a `.git` directory otherwise would.
 
 ## Architecture
 
-The internal command structure, error-handling boundary, Docker build, and
-release pipeline are documented in
-[`.claude/docs/architectural_patterns.md`](https://github.com/frob/v/blob/main/.claude/docs/architectural_patterns.md)
+The internal command structure, error-handling boundary, containerized
+toolchain, and release pipeline are documented in
+[`.claude/docs/architectural_patterns.md`](https://github.com/frob/v/blob/0.2.x/.claude/docs/architectural_patterns.md)
 and summarized for contributors in the
 [Contribution guide](../contributing/index.md).

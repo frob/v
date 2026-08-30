@@ -1,9 +1,10 @@
 # Documentation toolchain container — MkDocs + Material theme.
 #
 # One container per concern: this image knows nothing about the Go
-# toolchain. The API reference is generated separately by `go doc` in the
-# build container (see docs/gen-api.sh) and committed as Markdown that this
-# image renders into the site.
+# toolchain. The reference pages are generated separately in the build
+# container — api.md by `go doc` (docs/gen-api.sh) and cli/ from the cobra
+# command tree (docs/gen-cli.sh) — as gitignored Markdown that this image
+# then renders into the site.
 #
 # ENTRYPOINT is `mkdocs`, so `docker run <image> build` runs `mkdocs build`.
 FROM python:3.12-alpine

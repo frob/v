@@ -5,7 +5,7 @@
 # Wipes and rewrites docs/content/reference/cli/.
 set -eu
 
-OUT=docs/content/reference/api
+OUT=docs/content/reference/cli
 
 rm -rf "${OUT}"
 mkdir -p "${OUT}"
